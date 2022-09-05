@@ -23,6 +23,7 @@ func main() {
 	usbTimeout := flag.Int("usb-timeout", 5000, "timeout in milliseconds")
 	vfat := flag.Bool("vfat", true, "assume removable RAM media uses VFAT, and rewrite names.")
 	other := flag.Bool("allow-other", false, "allow other users to access mounted fuse. Default: false.")
+	tz := flag.String("tz", "UTC", "IANA timezone (or \"Local\" for local time) of modification times if the device doesn't specify any")
 	deviceFilter := flag.String("dev", "",
 		"regular expression to filter device IDs, "+
 			"which are composed of manufacturer/product/serial.")
@@ -57,9 +58,15 @@ func main() {
 		log.Fatalf("selectStorages failed: %v", err)
 	}
 
+	timeLocation, err := time.LoadLocation(*tz)
+	if err != nil {
+		log.Fatalf("time.LoadLocation(%s) failed: %v", tz, err)
+	}
+
 	opts := fs.DeviceFsOptions{
 		RemovableVFat: *vfat,
 		Android:       *android,
+		TimeLocation:  timeLocation,
 	}
 	root, err := fs.NewDeviceFSRoot(dev, sids, opts)
 	if err != nil {

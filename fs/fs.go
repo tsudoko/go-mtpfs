@@ -31,6 +31,10 @@ type DeviceFsOptions struct {
 
 	// Use android extensions if available.
 	Android bool
+
+	// Location to use in case the device returns timestamps without explicit
+	// time zone information.
+	TimeLocation *time.Location
 }
 
 // DeviceFS implements a fuse.NodeFileSystem that mounts multiple
@@ -374,6 +378,15 @@ func (n *folderNode) fetch(ctx context.Context) bool {
 			log.Printf("ignoring handle 0x%x with empty name in dir 0x%x",
 				handle, n.Handle())
 			continue
+		}
+
+		if obj.CaptureDate.Location() == mtp.UndefinedTimeLocation {
+			cd := obj.CaptureDate
+			obj.CaptureDate = time.Date(cd.Year(), cd.Month(), cd.Day(), cd.Hour(), cd.Minute(), cd.Second(), cd.Nanosecond(), n.fs.options.TimeLocation)
+		}
+		if obj.ModificationDate.Location() == mtp.UndefinedTimeLocation {
+			md := obj.ModificationDate
+			obj.ModificationDate = time.Date(md.Year(), md.Month(), md.Day(), md.Hour(), md.Minute(), md.Second(), md.Nanosecond(), n.fs.options.TimeLocation)
 		}
 
 		if obj.CompressedSize == 0xFFFFFFFF {
