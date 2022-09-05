@@ -183,6 +183,9 @@ var timeType = reflect.ValueOf(time.Now()).Type()
 const timeFormat = "20060102T150405"
 const timeFormatNumTZ = "20060102T150405-0700"
 
+// UndefinedTimeLocation is the Location attached to Time values without
+// explicit time zone information.
+var UndefinedTimeLocation = time.FixedZone("N/A", 0)
 var zeroTime = time.Time{}
 
 func encodeTime(w io.Writer, f reflect.Value) error {
@@ -211,13 +214,10 @@ func decodeTime(r io.Reader, f reflect.Value) error {
 		// Samsung has trailing dots.
 		s = strings.TrimRight(s, ".")
 
-		// Jolla Sailfish has trailing "Z".
-		s = strings.TrimRight(s, "Z")
-
-		t, err = time.Parse(timeFormat, s)
+		t, err = time.ParseInLocation(timeFormat, s, UndefinedTimeLocation)
 		if err != nil {
-			// Nokia lumia has numTZ
-			t, err = time.Parse(timeFormatNumTZ, s)
+			// Nokia lumia and Jolla Sailfish have numTZ
+			t, err = time.ParseInLocation(timeFormatNumTZ, s, UndefinedTimeLocation)
 			if err != nil {
 				return err
 			}
